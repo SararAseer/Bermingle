@@ -43,24 +43,20 @@ void add_polygon( struct matrix *polygons,
   lines connecting each points to create bounding triangles
   ====================*/
 void draw_polygons( struct matrix *polygons, screen s, color c ) {
-  int i;
-  double x0, y0, x1, y1, x2, y2;
   double ax, ay, bx, by;
-  for ( i = 0 ; i < polygons->lastcol-2 ; i += 3 ) {
-    x0 = polygons->m[0][i];
-    y0 = polygons->m[1][i];
-    x1 = polygons->m[0][i+1];
-    y1 = polygons->m[1][i+1];
-    x2 = polygons->m[0][i+2];
-    y2 = polygons->m[1][i+2];
 
-    ax = x1 - x0; ay = y1 - y0;
-    bx = x2 - x0; by = y2 - y0;
-    
-    if ( ax * by - ay * bx > 0 ) {
-      draw_line(x0, y0, x1, y1, s, c);
-      draw_line(x1, y1, x2, y2, s, c);
-      draw_line(x0, y0, x2, y2, s, c);
+  double view[3] = {0, 0, 1};
+  double * normal;
+  double dot;
+
+  for(int point = 0; point < polygons->lastcol; point += 3){
+    normal = calculate_normal(polygons, point);
+    dot = dot_product(normal, view);
+
+    if(dot_product(normal, view) > 0){
+      draw_line(polygons->m[0][point], polygons->m[1][point], polygons->m[0][point+1], polygons->m[1][point+1], s, c);
+      draw_line(polygons->m[0][point+1], polygons->m[1][point+1], polygons->m[0][point+2], polygons->m[1][point+2], s, c);
+      draw_line(polygons->m[0][point+2], polygons->m[1][point+2], polygons->m[0][point], polygons->m[1][point], s, c);
     }
   }
 }
