@@ -10,15 +10,15 @@
 
 /*======== void add_polygon() ==========
   Inputs:   struct matrix *polygons
-            double x0
-            double y0
-            double z0
-            double x1
-            double y1
-            double z1
-            double x2
-            double y2
-            double z2
+  double x0
+  double y0
+  double z0
+  double x1
+  double y1
+  double z1
+  double x2
+  double y2
+  double z2
   Returns:
   Adds the vertices (x0, y0, z0), (x1, y1, z1)
   and (x2, y2, z2) to the polygon matrix. They
@@ -36,8 +36,8 @@ void add_polygon( struct matrix *polygons,
 
 /*======== void draw_polygons() ==========
   Inputs:   struct matrix *polygons
-            screen s
-            color c
+  screen s
+  color c
   Returns:
   Goes through polygons 3 points at a time, drawing
   lines connecting each points to create bounding triangles
@@ -63,12 +63,12 @@ void draw_polygons( struct matrix *polygons, screen s, color c ) {
 
 /*======== void add_box() ==========
   Inputs:   struct matrix * edges
-            double x
-            double y
-            double z
-            double width
-            double height
-            double depth
+  double x
+  double y
+  double z
+  double width
+  double height
+  double depth
 
   add the points for a rectagular prism whose
   upper-left-front corner is (x, y, z) with width,
@@ -77,56 +77,35 @@ void draw_polygons( struct matrix *polygons, screen s, color c ) {
 void add_box( struct matrix * edges,
               double x, double y, double z,
               double width, double height, double depth ) {
+
   double x0, y0, z0, x1, y1, z1;
-  x0 = x;
-  x1 = x+width;
-  y0 = y;
-  y1 = y-height;
-  z0 = z;
-  z1 = z-depth;
-
+  x0 = x;  x1 = x+width;
+  y0 = y;  y1 = y-height;
+  z0 = z;  z1 = z-depth;
+  
   //front
-  add_edge(edges, x0, y0, z0, x1, y0, z0);
-  add_edge(edges, x1, y0, z0, x1, y1, z0);
-  add_edge(edges, x1, y1, z0, x0, y1, z0);
-  add_edge(edges, x0, y1, z0, x0, y0, z0);
-
+  add_polygon(edges, x0, y0, z0, x1, y0, z0, x1, y1, z0);
+  add_polygon(edges, x1, y1, z0, x0, y1, z0, x0, y0, z0);
+  //top
+  add_polygon(edges, x0, y1, z0, x1, y1, z0, x1, y1, z1);
+  add_polygon(edges, x1, y1, z1, x0, y1, z1, x0, y1, z0);
   //back
-  add_edge(edges, x0, y0, z1, x1, y0, z1);
-  add_edge(edges, x1, y0, z1, x1, y1, z1);
-  add_edge(edges, x1, y1, z1, x0, y1, z1);
-  add_edge(edges, x0, y1, z1, x0, y0, z1);
-
-  //sides
-  add_edge(edges, x0, y0, z0, x0, y0, z1);
-  add_edge(edges, x1, y0, z0, x1, y0, z1);
-  add_edge(edges, x1, y1, z0, x1, y1, z1);
-  add_edge(edges, x0, y1, z0, x0, y1, z1);
+  add_polygon(edges, x0, y1, z1, x1, y1, z1, x1, y0, z1);
+  add_polygon(edges, x1, y0, z1, x0, y0, z1, x0, y1, z1);
+  //bottom
+  add_polygon(edges, x0, y0, z1, x1, y0, z1, x1, y0, z0);
+  add_polygon(edges, x1, y0, z0, x0, y0, z0, x0, y0, z1);
+  //right
+  add_polygon(edges, x1, y0, z0, x1, y0, z1, x1, y1, z1);
+  add_polygon(edges, x1, y1, z1, x1, y1, z0, x1, y0, z0);
+  //left
+  add_polygon(edges, x0, y0, z1, x0, y0, z0, x0, y1, z0);
+  add_polygon(edges, x0, y1, z0, x0, y1, z1, x0, y0, z1);
 }
 
-
-/*======== void add_sphere() ==========
-  Inputs:   struct matrix * points
-            double cx
-            double cy
-            double cz
-            double r
-            int step  
-
-  adds all the points for a sphere with center (cx, cy, cz)
-  and radius r using step points per circle/semicircle.
-
-  Since edges are drawn using 2 points, add each point twice,
-  or add each point and then another point 1 pixel away.
-
-  should call generate_sphere to create the necessary points
-  ====================*/
-void add_sphere( struct matrix * edges,
-                 double cx, double cy, double cz,
-                 double r, int step ) {
-
-  struct matrix *points = generate_sphere(cx, cy, cz, r, step);
-  int index, lat, longt;
+void add_sphere(struct matrix * polygons, double cx, double cy, double cz, double r, int step) {
+  struct matrix * points = generate_sphere(cx, cy, cz, r, step);
+  int index0, index1, index2, index3, lat, longt;
   int latStop, longStop, latStart, longStart;
   latStart = 0;
   latStop = step;
@@ -134,16 +113,29 @@ void add_sphere( struct matrix * edges,
   longStop = step;
 
   step++;
-  for ( lat = latStart; lat < latStop; lat++ ) {
-    for ( longt = longStart; longt <= longStop; longt++ ) {
+  for (lat = latStart; lat < latStop; lat++) {
+    for (longt = longStart; longt < longStop; longt++) {
+      index0 = lat * (step) + longt;
+      index1 = index0 + 1;
 
-      index = lat * (step) + longt;
-      add_edge( edges, points->m[0][index],
-                points->m[1][index],
-                points->m[2][index],
-                points->m[0][index] + 1,
-                points->m[1][index] + 1,
-                points->m[2][index] + 1);
+      if(lat == step - 2){
+	index2 = longt + step;
+	index3 = longt + step + 1;
+      } else {
+	index2 = index0 + step;
+	index3 = index0 + step + 1;
+      }
+
+      add_polygon(polygons,
+		  points->m[0][index0], points->m[1][index0], points->m[2][index0],
+		  points->m[0][index1], points->m[1][index1], points->m[2][index1],
+		  points->m[0][index3], points->m[1][index3], points->m[2][index3]
+		  );
+      add_polygon(polygons,
+		  points->m[0][index0], points->m[1][index0], points->m[2][index0],
+		  points->m[0][index3], points->m[1][index3], points->m[2][index3],
+		  points->m[0][index2], points->m[1][index2], points->m[2][index2]
+		  );
     }
   }
   free_matrix(points);
@@ -151,15 +143,15 @@ void add_sphere( struct matrix * edges,
 
 /*======== void generate_sphere() ==========
   Inputs:   struct matrix * points
-            double cx
-            double cy
-            double cz
-            double r
-            int step
+  double cx
+  double cy
+  double cz
+  double r
+  int step
   Returns: Generates all the points along the surface
-           of a sphere with center (cx, cy, cz) and
-           radius r using step points per circle/semicircle.
-           Returns a matrix of those points
+  of a sphere with center (cx, cy, cz) and
+  radius r using step points per circle/semicircle.
+  Returns a matrix of those points
   ====================*/
 struct matrix * generate_sphere(double cx, double cy, double cz,
                                 double r, int step ) {
@@ -180,10 +172,8 @@ struct matrix * generate_sphere(double cx, double cy, double cz,
       circ = (double)circle / step;
 
       x = r * cos(M_PI * circ) + cx;
-      y = r * sin(M_PI * circ) *
-        cos(2*M_PI * rot) + cy;
-      z = r * sin(M_PI * circ) *
-        sin(2*M_PI * rot) + cz;
+      y = r * sin(M_PI * circ) * cos(2*M_PI * rot) + cy;
+      z = r * sin(M_PI * circ) * sin(2*M_PI * rot) + cz;
 
       /* printf("rotation: %d\tcircle: %d\n", rotation, circle); */
       /* printf("rot: %lf\tcirc: %lf\n", rot, circ); */
@@ -197,25 +187,21 @@ struct matrix * generate_sphere(double cx, double cy, double cz,
 
 /*======== void add_torus() ==========
   Inputs:   struct matrix * points
-            double cx
-            double cy
-            double cz
-            double r1
-            double r2
-            double step
+  double cx
+  double cy
+  double cz
+  double r1
+  double r2
+  double step
   Returns:
-
   adds all the points required for a torus with center (cx, cy, cz),
   circle radius r1 and torus radius r2 using step points per circle.
-
   should call generate_torus to create the necessary points
   ====================*/
-void add_torus( struct matrix * edges, 
-                double cx, double cy, double cz,
-                double r1, double r2, int step ) {
 
+void add_torus( struct matrix * polygons, double cx, double cy, double cz, double r1, double r2, int step ) {
   struct matrix *points = generate_torus(cx, cy, cz, r1, r2, step);
-  int index, lat, longt;
+  int index0, index1, index2, index3, lat, longt;
   int latStop, longStop, latStart, longStart;
   latStart = 0;
   latStop = step;
@@ -225,30 +211,39 @@ void add_torus( struct matrix * edges,
   for ( lat = latStart; lat < latStop; lat++ ) {
     for ( longt = longStart; longt < longStop; longt++ ) {
 
-      index = lat * step + longt;
-      add_edge( edges, points->m[0][index],
-                points->m[1][index],
-                points->m[2][index],
-                points->m[0][index] + 1,
-                points->m[1][index] + 1,
-                points->m[2][index] + 1);
+      index0 = (lat * step + longt) % (points->lastcol);
+      index1 = (lat * step + longt + 1)  % (points->lastcol);
+      index2 = (lat * step + longt + step) % (points->lastcol);
+      index3 = (lat * step + longt + step + 1) % (points->lastcol);
+
+      add_polygon(polygons,
+		  points->m[0][index0], points->m[1][index0], points->m[2][index0],
+		  points->m[0][index1], points->m[1][index1], points->m[2][index1],
+		  points->m[0][index3], points->m[1][index3], points->m[2][index3]
+		  );
+      add_polygon(polygons,
+		  points->m[0][index0], points->m[1][index0], points->m[2][index0],
+		  points->m[0][index3], points->m[1][index3], points->m[2][index3],
+		  points->m[0][index2], points->m[1][index2], points->m[2][index2]
+		  );
     }
   }
   free_matrix(points);
 }
 
+
 /*======== void generate_torus() ==========
   Inputs:   struct matrix * points
-            double cx
-            double cy
-            double cz
-            double r
-            int step
+  double cx
+  double cy
+  double cz
+  double r
+  int step
   Returns: Generates all the points along the surface
-           of a torus with center (cx, cy, cz),
-           circle radius r1 and torus radius r2 using
-           step points per circle.
-           Returns a matrix of those points
+  of a torus with center (cx, cy, cz),
+  circle radius r1 and torus radius r2 using
+  step points per circle.
+  Returns a matrix of those points
   ====================*/
 struct matrix * generate_torus( double cx, double cy, double cz,
                                 double r1, double r2, int step ) {
@@ -281,6 +276,7 @@ struct matrix * generate_torus( double cx, double cy, double cz,
   }
   return points;
 }
+
 
 /*======== void add_circle() ==========
   Inputs:   struct matrix * edges
